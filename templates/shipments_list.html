@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}配送管理 - TMS 運輸管理系統{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-shipping-fast"></i> 配送管理</h2>
+    <a href="{{ url_for('shipments_assign') }}" class="btn btn-warning">
+        <i class="fas fa-link"></i> 安排配送
+    </a>
+</div>
+
+<!-- 配送列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list"></i> 配送清單 
+            <span class="badge bg-warning">{{ shipments|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if shipments %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>配送ID</th>
+                            <th>貨物資訊</th>
+                            <th>路線資訊</th>
+                            <th>狀態</th>
+                            <th>建立時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in shipments %}
+                        <tr>
+                            <td>{{ item.shipment.id }}</td>
+                            <td>
+                                {% if item.cargo %}
+                                    <div>
+                                        <strong>{{ item.cargo.name }}</strong><br>
+                                        <small class="text-muted">
+                                            數量: {{ item.cargo.quantity }} | 
+                                            總重: {{ "%.1f"|format(item.cargo.weight * item.cargo.quantity) }}kg
+                                        </small>
+                                    </div>
+                                {% else %}
+                                    <span class="text-danger">貨物已刪除</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.route %}
+                                    <div>
+                                        <strong>{{ item.route.name }}</strong><br>
+                                        <small class="text-muted">
+                                            {{ item.route.start_point }} → {{ item.route.end_point }}
+                                        </small>
+                                    </div>
+                                {% else %}
+                                    <span class="text-danger">路線已刪除</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set status_class = {
+                                    '待配送': 'bg-secondary',
+                                    '配送中': 'bg-warning',
+                                    '已送達': 'bg-success',
+                                    '已取消': 'bg-danger'
+                                } %}
+                                <span class="badge {{ status_class.get(item.shipment.status, 'bg-secondary') }}">
+                                    {{ item.shipment.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ item.shipment.created_at }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <!-- 狀態更新按鈕 -->
+                                    {% if item.shipment.status == '待配送' %}
+                                        <a href="{{ url_for('shipments_update_status', shipment_id=item.shipment.id, status='配送中') }}" 
+                                           class="btn btn-sm btn-outline-warning" title="開始配送">
+                                            <i class="fas fa-play"></i>
+                                        </a>
+                                    {% elif item.shipment.status == '配送中' %}
+                                        <a href="{{ url_for('shipments_update_status', shipment_id=item.shipment.id, status='已送達') }}" 
+                                           class="btn btn-sm btn-outline-success" title="標記送達">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if item.shipment.status in ['待配送', '配送中'] %}
+                                        <a href="{{ url_for('shipments_update_status', shipment_id=item.shipment.id, status='已取消') }}" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           onclick="return confirm('確定要取消此配送嗎？')" title="取消配送">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <a href="{{ url_for('shipments_delete', shipment_id=item.shipment.id) }}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('確定要刪除此配送記錄嗎？')" title="刪除記錄">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 統計資訊 -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-secondary">待配送</h5>
+                            <h3 class="text-secondary">
+                                {{ shipments|selectattr('shipment.status', 'equalto', '待配送')|list|length }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">配送中</h5>
+                            <h3 class="text-warning">
+                                {{ shipments|selectattr('shipment.status', 'equalto', '配送中')|list|length }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">已送達</h5>
+                            <h3 class="text-success">
+                                {{ shipments|selectattr('shipment.status', 'equalto', '已送達')|list|length }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger">已取消</h5>
+                            <h3 class="text-danger">
+                                {{ shipments|selectattr('shipment.status', 'equalto', '已取消')|list|length }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shipping-fast fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">尚無配送記錄</h5>
+                <p class="text-muted">請安排第一筆貨物配送</p>
+                <a href="{{ url_for('shipments_assign') }}" class="btn btn-warning">
+                    <i class="fas fa-link"></i> 安排配送
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

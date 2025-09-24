@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}首頁 - TMS 運輸管理系統{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+            <h1 class="display-4">
+                <i class="fas fa-truck"></i> TMS 運輸管理系統
+            </h1>
+            <p class="lead">簡易運輸管理系統示範版本 - 管理貨物運輸與配送路線</p>
+            <hr class="my-4">
+            <p>本系統提供貨物管理、路線規劃、配送安排等核心功能，所有資料均儲存在記憶體中。</p>
+        </div>
+    </div>
+</div>
+
+<!-- 統計卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-box fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_cargo }}</div>
+                <div>總貨物數</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-route fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_routes }}</div>
+                <div>運輸路線</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-shipping-fast fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_shipments }}</div>
+                <div>配送記錄</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-weight-hanging fa-2x mb-2"></i>
+                <div class="stats-number">{{ "%.1f"|format(total_weight) }}</div>
+                <div>總重量 (kg)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt"></i> 快速操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('cargo_add') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus"></i> 新增貨物
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('routes_add') }}" class="btn btn-success w-100">
+                            <i class="fas fa-plus"></i> 新增路線
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('shipments_assign') }}" class="btn btn-warning w-100">
+                            <i class="fas fa-link"></i> 安排配送
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('shipments_list') }}" class="btn btn-info w-100">
+                            <i class="fas fa-list"></i> 查看配送
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近資料 -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-box"></i> 最近新增的貨物
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_cargo %}
+                    <div class="list-group list-group-flush">
+                        {% for cargo in recent_cargo %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ cargo.name }}</h6>
+                                <small class="text-muted">
+                                    數量: {{ cargo.quantity }} | 重量: {{ cargo.weight }}kg
+                                </small>
+                            </div>
+                            <small class="text-muted">{{ cargo.created_at }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">尚無貨物資料</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('cargo_list') }}" class="btn btn-outline-primary btn-sm">
+                        查看所有貨物
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-route"></i> 最近新增的路線
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_routes %}
+                    <div class="list-group list-group-flush">
+                        {% for route in recent_routes %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ route.name }}</h6>
+                                <small class="text-muted">
+                                    {{ route.start_point }} → {{ route.end_point }}
+                                </small>
+                            </div>
+                            <small class="text-muted">{{ route.created_at }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">尚無路線資料</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('routes_list') }}" class="btn btn-outline-success btn-sm">
+                        查看所有路線
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

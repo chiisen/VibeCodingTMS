@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}貨物管理 - TMS 運輸管理系統{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-box"></i> 貨物管理</h2>
+    <a href="{{ url_for('cargo_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 新增貨物
+    </a>
+</div>
+
+<!-- 搜尋功能 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" name="search" 
+                           placeholder="搜尋貨物名稱..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i> 搜尋
+                </button>
+                <a href="{{ url_for('cargo_list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> 清除
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 貨物列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list"></i> 貨物清單 
+            <span class="badge bg-primary">{{ cargo_list|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if cargo_list %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>貨物名稱</th>
+                            <th>數量</th>
+                            <th>重量 (kg)</th>
+                            <th>總重量 (kg)</th>
+                            <th>描述</th>
+                            <th>建立時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cargo in cargo_list %}
+                        <tr>
+                            <td>{{ cargo.id }}</td>
+                            <td>
+                                <strong>{{ cargo.name }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ cargo.quantity }}</span>
+                            </td>
+                            <td>{{ cargo.weight }}</td>
+                            <td>
+                                <span class="badge bg-warning">
+                                    {{ "%.1f"|format(cargo.weight * cargo.quantity) }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if cargo.description %}
+                                    <small class="text-muted">{{ cargo.description[:50] }}{% if cargo.description|length > 50 %}...{% endif %}</small>
+                                {% else %}
+                                    <small class="text-muted">無</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ cargo.created_at }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('cargo_edit', cargo_id=cargo.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="編輯">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('cargo_delete', cargo_id=cargo.id) }}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('確定要刪除此貨物嗎？')" title="刪除">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">尚無貨物資料</h5>
+                <p class="text-muted">
+                    {% if search %}
+                        找不到符合 "{{ search }}" 的貨物
+                    {% else %}
+                        請新增第一筆貨物資料
+                    {% endif %}
+                </p>
+                {% if not search %}
+                    <a href="{{ url_for('cargo_add') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 新增貨物
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

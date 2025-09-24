@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}安排配送 - TMS 運輸管理系統{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-link"></i> 安排配送
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="cargo_id" class="form-label">
+                            <i class="fas fa-box"></i> 選擇貨物 <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="cargo_id" name="cargo_id" required>
+                            <option value="">請選擇貨物...</option>
+                            {% for cargo in cargo_list %}
+                            <option value="{{ cargo.id }}">
+                                {{ cargo.name }} - 數量: {{ cargo.quantity }} | 總重: {{ "%.1f"|format(cargo.weight * cargo.quantity) }}kg
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">請選擇要配送的貨物</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="route_id" class="form-label">
+                            <i class="fas fa-route"></i> 選擇路線 <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="route_id" name="route_id" required>
+                            <option value="">請選擇路線...</option>
+                            {% for route in routes_list %}
+                            <option value="{{ route.id }}">
+                                {{ route.name }} - {{ route.start_point }} → {{ route.end_point }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">請選擇配送路線</div>
+                    </div>
+
+                    <!-- 配送預覽 -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-eye"></i> 配送預覽
+                        </label>
+                        <div id="shipment-preview" class="alert alert-info" style="display: none;">
+                            <div id="shipment-display"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('shipments_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回列表
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-link"></i> 安排配送
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 貨物和路線資訊卡片 -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-box"></i> 可用貨物
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if cargo_list %}
+                    <div class="list-group list-group-flush">
+                        {% for cargo in cargo_list %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ cargo.name }}</h6>
+                                <small class="text-muted">
+                                    數量: {{ cargo.quantity }} | 單重: {{ cargo.weight }}kg | 
+                                    總重: {{ "%.1f"|format(cargo.weight * cargo.quantity) }}kg
+                                </small>
+                            </div>
+                            <span class="badge bg-primary">ID: {{ cargo.id }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">尚無可用貨物</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('cargo_add') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus"></i> 新增貨物
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-route"></i> 可用路線
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if routes_list %}
+                    <div class="list-group list-group-flush">
+                        {% for route in routes_list %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ route.name }}</h6>
+                                <small class="text-muted">
+                                    {{ route.start_point }} → {{ route.end_point }}
+                                    {% if route.waypoints %}
+                                        <br>途經: {{ route.waypoints|join(', ') }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge bg-success">ID: {{ route.id }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">尚無可用路線</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('routes_add') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-plus"></i> 新增路線
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cargoSelect = document.getElementById('cargo_id');
+    const routeSelect = document.getElementById('route_id');
+    const shipmentPreview = document.getElementById('shipment-preview');
+    const shipmentDisplay = document.getElementById('shipment-display');
+    
+    // 貨物資料
+    const cargoData = {
+        {% for cargo in cargo_list %}
+        {{ cargo.id }}: {
+            name: "{{ cargo.name }}",
+            quantity: {{ cargo.quantity }},
+            weight: {{ cargo.weight }},
+            totalWeight: {{ cargo.weight * cargo.quantity }}
+        },
+        {% endfor %}
+    };
+    
+    // 路線資料
+    const routeData = {
+        {% for route in routes_list %}
+        {{ route.id }}: {
+            name: "{{ route.name }}",
+            start: "{{ route.start_point }}",
+            end: "{{ route.end_point }}",
+            waypoints: {{ route.waypoints|tojson }}
+        },
+        {% endfor %}
+    };
+    
+    function updateShipmentPreview() {
+        const cargoId = parseInt(cargoSelect.value);
+        const routeId = parseInt(routeSelect.value);
+        
+        if (cargoId && routeId && cargoData[cargoId] && routeData[routeId]) {
+            const cargo = cargoData[cargoId];
+            const route = routeData[routeId];
+            
+            let previewText = '<div class="row">';
+            previewText += '<div class="col-md-6">';
+            previewText += '<h6><i class="fas fa-box"></i> 貨物資訊</h6>';
+            previewText += `<p><strong>${cargo.name}</strong><br>`;
+            previewText += `數量: ${cargo.quantity} | 總重: ${cargo.totalWeight.toFixed(1)}kg</p>`;
+            previewText += '</div>';
+            previewText += '<div class="col-md-6">';
+            previewText += '<h6><i class="fas fa-route"></i> 路線資訊</h6>';
+            previewText += `<p><strong>${route.name}</strong><br>`;
+            previewText += `${route.start} → ${route.end}`;
+            if (route.waypoints && route.waypoints.length > 0) {
+                previewText += `<br>途經: ${route.waypoints.join(', ')}`;
+            }
+            previewText += '</p></div></div>';
+            
+            shipmentDisplay.innerHTML = previewText;
+            shipmentPreview.style.display = 'block';
+        } else {
+            shipmentPreview.style.display = 'none';
+        }
+    }
+    
+    cargoSelect.addEventListener('change', updateShipmentPreview);
+    routeSelect.addEventListener('change', updateShipmentPreview);
+    
+    // 初始預覽
+    updateShipmentPreview();
+});
+</script>
+{% endblock %}
